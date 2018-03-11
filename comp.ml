@@ -173,7 +173,7 @@ let graham graph =
         | point :: r -> begin
             match stack with
             | firstpoint :: secondpoint :: s ->
-                if isleft point (Line(secondpoint, firstpoint)) then
+                if isleft point (Line (secondpoint, firstpoint)) then
                     iterate r (point :: stack)
                 else
                     iterate graph (secondpoint :: s)
@@ -185,3 +185,57 @@ let graham graph =
     match ordered_graph with
     | [] -> [p0]
     | firstpoint :: r -> iterate r [firstpoint; p0]
+
+(* val insert_after : 'a -> 'a -> 'a list -> 'a list *)
+let rec insert_after point newpoint pointlist =
+    match pointlist with
+    | [] -> failwith "insert_after - empty list"
+    | p :: r ->
+        if p = point then
+            p :: newpoint :: r
+        else
+            p :: (insert_after point newpoint r)
+
+(* val equation : point -> point -> float * float * float *)
+let equation (Point (x1, y1)) (Point (x2, y2)) =
+    let a = y2 -. y1 in
+    let b = x1 -. x2 in
+    let c = -. a *. x1 -. b *. y1 in
+    (a, b, c)
+
+(* val farthestpoint : graph -> point -> point -> point *)
+let farthestpoint graph a b =
+    let distance (Line (p1, p2)) (Point (x, y)) =
+        let a, b, c = equation p1 p2 in
+        (abs_float (a *. x +. b *. y +. c)) /. (sqrt (a *. a +. b *. b))
+    in maximise_on_graph (distance (Line (a, b))) graph
+
+(* val quickhull : graph -> point list *)
+let quickhull graph =
+    let rec qhull graph a b envelope =
+        let g = List.filter (fun point -> point <> a && point <> b) graph in
+        if g = [] then () else
+        let s = farthestpoint g a b in
+        envelope := insert_after a s !envelope;
+        let g1 = List.filter (fun point -> isleft point (Line (a, s))) g in
+        let g2 = List.filter (fun point -> isleft point (Line (s, b))) g in
+        qhull g1 a s envelope;
+        qhull g2 s b envelope
+    in
+    let p1 = minimise_on_graph x graph in
+    let p2 = maximise_on_graph x graph in
+    if p1 = p2 then [p1] else
+    let g = List.filter (fun point -> point <> p1 && point <> p2) graph in
+    let g1, g2 = List.partition (fun point -> isleft point (Line (p1, p2))) g in
+    let env = ref [p1; p2] in
+    qhull g1 p1 p2 env;
+    qhull g2 p2 p1 env;
+    !env
+
+(*
+
+Jarvis infinite loop on this
+
+[(-4.73,-4.92);(2.58,1.77);(-3.17,-3.02);(-4.86,-0.70);(1.86,-4.95);(3.45,1.84);(1.33,4.56);(1.82,1.99);(-1.87,-0.11);(-3.62,1.80);(2.52,-2.80);(1.97,4.37);(-3.38,1.11);(4.33,2.51);(2.56,-4.48);(-4.41,-4.05);(2.72,2.83);(4.81,3.18);(-2.52,4.54);(4.60,4.95);(1.79,4.35);(3.91,3.05);(0.04,-1.87);(3.02,0.72);(-2.48,3.17);(-4.63,4.40);(3.77,-4.96);(1.15,2.33);(-0.16,-4.61);(-4.09,0.48);(1.43,-2.60);(-4.76,-3.50);(4.68,-0.85);(-1.31,-4.96);(4.99,-2.84);(-3.50,-1.71);(-3.66,1.78);(4.91,-4.59);(1.13,1.37);(-0.46,2.93);(2.33,3.66);(3.70,-0.09);(-2.76,1.10);(1.49,-0.15);(-4.66,2.08);(4.49,2.39);(3.89,1.77);(-4.08,4.72);(4.77,3.57);(-4.27,-0.39);(2.90,4.76);(1.54,-2.77);(-2.36,4.24);(0.61,1.45);(-0.62,3.78);(2.43,-4.85);(0.0,0.0)]
+
+*)

@@ -4,3 +4,4 @@ An OCaml implementation of several well-known algorithms that determine a graph'
 ## Algorithms used
 - Jarvis
 - Graham
+- Quickhull
