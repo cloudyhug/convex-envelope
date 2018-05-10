@@ -11,6 +11,13 @@ let rec graph_of_list pointlist : graph =
     | [] -> []
     | point :: r -> (Point point) :: graph_of_list r
 
+let randomgraph n limit =
+    Random.self_init();
+    let f () = Random.float (2. *. limit) -. limit in
+    Array.init n (fun _ -> (f(), f()))
+    |> Array.to_list
+    |> graph_of_list
+
 (* val minimise_on_graph : (point -> 'a) -> graph -> point
  * Finds the point in the graph that minimises the function.
  *)
